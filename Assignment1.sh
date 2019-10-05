@@ -42,7 +42,7 @@ sort -k1,1n $guide | while read smpl_nmbr smpl_type pair1 pair2; do
  pair2_path="/localdisk/data/BPSM/Assignment1/fastq/$pair2"
 
  #fastqc analysis
- echo -e "\nStarting read quality assessment of sample $smpl_nmbr\n"
+ echo -e "\nAssessing sequencing quality of sample $smpl_nmbr...\n"
  fastqc --extract -o fastqc_outputs/ $pair1_path $pair2_path
 
  #fastqc results presented for user
@@ -64,11 +64,17 @@ sort -k1,1n $guide | while read smpl_nmbr smpl_type pair1 pair2; do
 
     #use bowtie2 pair-based sequencing options to align
     #using 3 threads to make it a little bit faster
-    echo -e "Pairing sample $smpl_nmbr reads to genome\n"
+    echo -e "\nPairing sample $smpl_nmbr reads to genome...\n"
     bowtie2 -x $genome_prefix -1 $pair1_path -2 $pair2_path -S $smpl_nmbr.sam --threads 3
     
-    #use samtools to convert the output to BAM format ('view' auto-detects SAM input and outputs to BAM)
-    samtools view $smpl_nmbr.sam > $smpl_nmbr.bam
+    #use samtools to convert the output to BAM format ('view' gets SAM input and -b scpecifies outputs to BAM)
+    samtools view -b $smpl_nmbr.sam > $smpl_nmbr.bam
+
+    #use bedtools to get gene count for this read pair
+    #pairtobed gets the hits for this read pair in this bed file
+    #using -abam to specify BAM input and -bedpe to specify BED formatted output, where the gene name is in column 14. We will sort and count each gene hit
+    echo -e "\nCounting read alignments per gene for sample $smpl_nmbr"
+    bedtools pairtobed -abam $smpl_nmbr.bam -b $genes -bedpe | cut -f14 | sort | uniq -c > $smpl_nmbr.bed
 
     echo -e "\nNext read pair..."
    ;;
