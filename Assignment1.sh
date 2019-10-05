@@ -11,7 +11,7 @@ guide="/localdisk/data/BPSM/Assignment1/fastq/fqfiles"
 #genome file must be decompressed to be used by bowtie2
 zip_genome="/localdisk/data/BPSM/Assignment1/Tbb_genome/Tb927_genome.fasta.gz"
 zcat $zip_genome > Tb927_genome.fasta
-genome="Tbb_genome.fasta"
+genome="Tb927_genome.fasta"
 
 #genes file to generate counts in the end
 genes="/localdisk/data/BPSM/Assignment1/Tbbgenes.bed"
@@ -26,6 +26,12 @@ rm -fr fastqc_outputs/*
 echo -e "\nUsing $guide\tfile as guide for paired reads"
 echo -e "Using $zip_genome\tfile as genome"
 echo -e "Using $genes\tfile as reference for gene locations\n"
+
+#create bowtie2 database for our genome as it will be used for every read
+genome_prefix=$(echo "$genome" | cut -f1 -d '.')
+echo -e "Creating $genome_prefix bowtie2 database...\n"
+bowtie2-build $genome $genome_prefix > /dev/null
+echo -e "\nGenome database creation done\n"
 
 #sorts fqfiles just so we do everything in order, then pipes into data processing loop
 sort -k1,1n $guide | while read smpl_nmbr smpl_type pair1 pair2; do
@@ -44,6 +50,7 @@ sort -k1,1n $guide | while read smpl_nmbr smpl_type pair1 pair2; do
  cut -f1,2 fastqc_outputs/"$smpl_nmbr"_L8_1_fastqc/summary.txt
  echo -e "\n$pair2"
  cut -f1,2 fastqc_outputs/"$smpl_nmbr"_L8_2_fastqc/summary.txt
+ echo
  
  #user can choose to use this sequencing data or not
  chose=0
@@ -53,7 +60,7 @@ sort -k1,1n $guide | while read smpl_nmbr smpl_type pair1 pair2; do
    #if user chose yes, continue processing
    [Yy])
     chose=1
-    echo -e "\nProcessing data..."
+    echo -e "\nProcessing data...\n"
    ;;
    #if user chose no, go to next pair 
    [Nn])
