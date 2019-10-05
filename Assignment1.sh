@@ -28,10 +28,11 @@ echo -e "Using $zip_genome\tfile as genome"
 echo -e "Using $genes\tfile as reference for gene locations\n"
 
 #create bowtie2 database for our genome as it will be used for every read
+#omitted bowtie2 output because it's too big and the user should know the quality of the genome
 genome_prefix=$(echo "$genome" | cut -f1 -d '.')
 echo -e "Creating $genome_prefix bowtie2 database...\n"
 bowtie2-build $genome $genome_prefix > /dev/null
-echo -e "\nGenome database creation done\n"
+echo -e "\nGenome database creation done"
 
 #sorts fqfiles just so we do everything in order, then pipes into data processing loop
 sort -k1,1n $guide | while read smpl_nmbr smpl_type pair1 pair2; do
@@ -41,18 +42,18 @@ sort -k1,1n $guide | while read smpl_nmbr smpl_type pair1 pair2; do
  pair2_path="/localdisk/data/BPSM/Assignment1/fastq/$pair2"
 
  #fastqc analysis
- echo -e "\nStarting read quality assessment of sample $smpl_nmbr"
+ echo -e "\nStarting read quality assessment of sample $smpl_nmbr\n"
  fastqc --extract -o fastqc_outputs/ $pair1_path $pair2_path
 
  #fastqc results presented for user
- echo -e "Results for quality assessment of pair $smpl_nmbr:"
+ echo -e "\nResults for quality assessment of pair $smpl_nmbr:"
  echo -e "\n$pair1"
  cut -f1,2 fastqc_outputs/"$smpl_nmbr"_L8_1_fastqc/summary.txt
  echo -e "\n$pair2"
  cut -f1,2 fastqc_outputs/"$smpl_nmbr"_L8_2_fastqc/summary.txt
  echo
  
- #user can choose to use this sequencing data or not
+ #user can choose to use this sequencing data or not. if user doesn't type y, n, Y or N, it will ask again 
  chose=0
  while test $chose -eq 0; do
   read -p "Do you want to use this sequencing data? [y/n]" -n 1 yn </dev/tty
@@ -60,7 +61,16 @@ sort -k1,1n $guide | while read smpl_nmbr smpl_type pair1 pair2; do
    #if user chose yes, continue processing
    [Yy])
     chose=1
-    echo -e "\nProcessing data...\n"
+
+    #use bowtie2 pair-based sequencing options to align
+    #using 3 threads to make it a little bit faster
+    echo -e "Pairing sample $smpl_nmbr reads to genome\n"
+    bowtie2 -x $genome_prefix -1 $pair1_path -2 $pair2_path -S $smpl_nmbr.sam --threads 3
+    
+    #use samtools to convert the output to BAM format ('view' auto-detects SAM input and outputs to BAM)
+    samtools view $smpl_nmbr.sam > $smpl_nmbr.bam
+
+    echo -e "\nNext read pair..."
    ;;
    #if user chose no, go to next pair 
    [Nn])
