@@ -85,7 +85,7 @@ while read smpl_nmbr smpl_type pair1 pair2; do
     #pairtobed gets the hits for this read pair in this bed file
     #using -abam to specify BAM input and -bedpe to specify BED formatted output, where the gene name is in column 14. We will sort and count each gene hit
     echo -e "\nCounting read alignments per gene for sample $smpl_nmbr..."
-    bedtools pairtobed -abam $smpl_nmbr.bam -b $genes -bedpe | cut -f14 | sort | uniq -c > $smpl_nmbr.bed
+    bedtools pairtobed -abam $smpl_nmbr.bam -b $genes -bedpe | cut -f14 | sort | uniq -c > $smpl_nmbr.counts
     echo -e "\nFinished counting sample $smpl_nmbr read alignments with genes"
    ;;
    #if user chose no, go to next pair 
@@ -114,11 +114,11 @@ rm -f $final_output
 #do a header for the output
 echo -e "gene name\tSlender mean\tStumpy mean" >> $final_output
 
-#this loop will go through each gene in our genes file and check in the .bed files created before if there were counts for it
+#this loop will go through each gene in our genes file and check in the .counts files created before if there were counts for it
 #if so, it will add each of the counts occurances and calculate a mean of all counts for each sample type in the end, appending this to the output file
 while read gene; do
 
- #define variables used to count total number of counts and occurances in .bed files
+ #define variables used to count total number of counts and occurances in .counts files
  stumpy_total=0
  stumpy_counts=0
  slender_total=0
@@ -127,8 +127,8 @@ while read gene; do
  #this loop will go through each sample and add the value of the count number to a cumulative total, also counting how many samples were used
  while read smpl_nmbr smpl_type; do
 
-  #the awk script will look for the current gene of the while loop in the .bed file and output its count number. outputs nothing if gene is not present
-  counts=$(awk -v gene="$gene" '{if($NF == gene){print $(NF-1);}}' $smpl_nmbr.bed)
+  #the awk script will look for the current gene of the while loop in the .counts file and output its count number. outputs nothing if gene is not present
+  counts=$(awk -v gene="$gene" '{if($NF == gene){print $(NF-1);}}' $smpl_nmbr.counts)
 
   #if statement prevents trying to add empty values
   if test "$counts" = ""; then
