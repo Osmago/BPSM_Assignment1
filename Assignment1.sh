@@ -35,13 +35,34 @@ sort -k1,1n $guide | while read smpl_nmbr smpl_type pair1 pair2; do
  pair2_path="/localdisk/data/BPSM/Assignment1/fastq/$pair2"
 
  #fastqc analysis
- echo -e "\nStarting read quality assessment of sample $smpl_nmbr\n"
+ echo -e "\nStarting read quality assessment of sample $smpl_nmbr"
  fastqc --extract -o fastqc_outputs/ $pair1_path $pair2_path
 
  #fastqc results presented for user
- echo -e "Results for quality assessmentof pair $smpl_nmbr:"
+ echo -e "Results for quality assessment of pair $smpl_nmbr:"
  echo -e "\n$pair1"
  cut -f1,2 fastqc_outputs/"$smpl_nmbr"_L8_1_fastqc/summary.txt
  echo -e "\n$pair2"
  cut -f1,2 fastqc_outputs/"$smpl_nmbr"_L8_2_fastqc/summary.txt
+ 
+ #user can choose to use this sequencing data or not
+ chose=0
+ while test $chose -eq 0; do
+  read -p "Do you want to use this sequencing data? [y/n]" -n 1 yn </dev/tty
+  case $yn in
+   #if user chose yes, continue processing
+   [Yy])
+    chose=1
+    echo -e "\nProcessing data..."
+   ;;
+   #if user chose no, go to next pair 
+   [Nn])
+    chose=1
+    echo -e "\nNext read pair..."
+   ;;
+   #if user chose anything else other than y,Y,n or N, ask again
+   *)
+    echo -e "\nPlease answer with y/n"
+  esac
+ done
 done
