@@ -20,19 +20,25 @@ genes="/localdisk/data/BPSM/Assignment1/Tbbgenes.bed"
 if test ! -d fastqc_outputs; then
  mkdir fastqc_outputs
  fi
-#rm -fr fastqc_outputs/*
+rm -fr fastqc_outputs/*
 
-declare what are the files being used
+#declare what are the files being used
 echo -e "\nUsing $guide\tfile as guide for paired reads"
 echo -e "Using $zip_genome\tfile as genome"
 echo -e "Using $genes\tfile as reference for gene locations\n"
 
 #sorts fqfiles just so we do everything in order, then pipes into data processing loop
 sort -k1,1n $guide | while read smpl_nmbr smpl_type pair1 pair2; do
+
+ #saving pairs files names so i can use them later
  pair1_path="/localdisk/data/BPSM/Assignment1/fastq/$pair1"
  pair2_path="/localdisk/data/BPSM/Assignment1/fastq/$pair2"
-# echo -e "\nStarting read quality assessment of sample $smpl_nmbr\n"
-# fastqc --extract -o fastqc_outputs/ $pair1_path $pair2_path
+
+ #fastqc analysis
+ echo -e "\nStarting read quality assessment of sample $smpl_nmbr\n"
+ fastqc --extract -o fastqc_outputs/ $pair1_path $pair2_path
+
+ #fastqc results presented for user
  echo -e "Results for quality assessmentof pair $smpl_nmbr:"
  echo -e "\n$pair1"
  cut -f1,2 fastqc_outputs/"$smpl_nmbr"_L8_1_fastqc/summary.txt
