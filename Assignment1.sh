@@ -129,7 +129,7 @@ final_output="Tbbgenes_means.tsv"
 rm -f $final_output
 
 #do a header for the output
-echo -e "gene name\tSlender mean\tStumpy mean" >> $final_output
+echo -e "gene_name\tSld_mean\tStp_mean" >> $final_output
 
 #this loop will go through each gene in our genes file and check in the .counts files created before if there were counts for it
 #if so, it will add each of the counts occurances and calculate a mean of all counts for each sample type in the end, appending this to the output file
