@@ -71,8 +71,9 @@ while read smpl_nmbr smpl_type pair1 pair2; do
  #user can choose to use this sequencing data or not. if user doesn't type y, n, Y or N, it will ask again 
  chose=0
  while test $chose -eq 0; do
-  read -p "Do you want to use this sequencing data? [y/n]" -n 1 yn </dev/tty
+#  read -p "Do you want to use this sequencing data? [y/n]" -n 1 yn </dev/tty
   echo
+  yn="y"
   case $yn in
    #if user chose yes, continue processing
    [Yy])
