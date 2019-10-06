@@ -26,17 +26,20 @@ rm -fr fastqc_outputs/*
 samples_used="samples_used"
 
 #declare what are the files being used
-echo -e "\nUsing $guide\tfile as guide for paired reads"
+echo
+echo -e "Using $guide\tfile as guide for paired reads"
 echo -e "Using $zip_genome\tfile as genome"
-echo -e "Using $genes\tfile as reference for gene locations\n"
-
+echo -e "Using $genes\tfile as reference for gene locations"
+echo
 #create bowtie2 database for our genome as it will be used for every read
 #omitted bowtie2 output because it's too big and the user should know the quality of the genome
 #using 2 threads to make it a little bit faster
 genome_prefix=$(echo "$genome" | cut -f1 -d '.')
-echo -e "Creating $genome_prefix bowtie2 database...\n"
+echo "Creating $genome_prefix bowtie2 database..."
+echo
 bowtie2-build $genome $genome_prefix --threads 2 > /dev/null
-echo -e "\nGenome database creation done"
+echo
+echo "Genome database creation done"
 
 #this loop will separate the analysis of each sequencing pair, sample by sample
 #this includes steps of the fastqc report and coosing wether to use the samples or not,
@@ -49,14 +52,19 @@ while read smpl_nmbr smpl_type pair1 pair2; do
 
  #fastqc analysis
  #using 2 threads to make it a little bit faster
- echo -e "\nAssessing sequencing quality of sample $smpl_nmbr...\n"
+ echo
+ echo "Assessing sequencing quality of sample $smpl_nmbr..."
+ echo
  fastqc --extract -o fastqc_outputs/ $pair1_path $pair2_path --threads 2
 
  #fastqc results presented for user
- echo -e "\nResults for quality assessment of pair $smpl_nmbr:"
- echo -e "\n$pair1"
+ echo
+ echo "Results for quality assessment of pair $smpl_nmbr:"
+ echo
+ echo "$pair1"
  cut -f1,2 fastqc_outputs/"$smpl_nmbr"_L8_1_fastqc/summary.txt
- echo -e "\n$pair2"
+ echo
+ echo "$pair2"
  cut -f1,2 fastqc_outputs/"$smpl_nmbr"_L8_2_fastqc/summary.txt
  echo
  
@@ -64,6 +72,7 @@ while read smpl_nmbr smpl_type pair1 pair2; do
  chose=0
  while test $chose -eq 0; do
   read -p "Do you want to use this sequencing data? [y/n]" -n 1 yn </dev/tty
+  echo
   case $yn in
    #if user chose yes, continue processing
    [Yy])
@@ -74,28 +83,34 @@ while read smpl_nmbr smpl_type pair1 pair2; do
 
     #use bowtie2 pair-based sequencing options to align
     #using 4 threads to make it a little bit faster
-    echo -e "\nPairing sample $smpl_nmbr reads to genome...\n"
+    echo "Pairing sample $smpl_nmbr reads to genome..."
+    echo
     bowtie2 -x $genome_prefix -1 $pair1_path -2 $pair2_path -S $smpl_nmbr.sam --threads 4
     
     #use samtools to convert the output to BAM format ('view' gets SAM input and -b scpecifies outputs to BAM)
-    echo -e "\nPreparing data for gene counts..."
+    echo
+    echo "Preparing data for gene counts..."
     samtools view -b $smpl_nmbr.sam > $smpl_nmbr.bam
 
     #use bedtools to get gene count for this read pair
     #pairtobed gets the hits for this read pair in this bed file
     #using -abam to specify BAM input and -bedpe to specify BED formatted output, where the gene name is in column 14. We will sort and count each gene hit
-    echo -e "\nCounting read alignments per gene for sample $smpl_nmbr..."
+    echo
+    echo "Counting read alignments per gene for sample $smpl_nmbr..."
     bedtools pairtobed -abam $smpl_nmbr.bam -b $genes -bedpe | cut -f14 | sort | uniq -c > $smpl_nmbr.counts
-    echo -e "\nFinished counting sample $smpl_nmbr read alignments with genes"
+    echo
+    echo "Finished counting sample $smpl_nmbr read alignments with genes"
    ;;
    #if user chose no, go to next pair 
    [Nn])
     chose=1
-    echo -e "\nNext read pair..."
+    echo
+    echo "Next read pair..."
    ;;
    #if user chose anything else other than y,Y,n or N, ask again
    *)
-    echo -e "\nPlease answer with y/n"
+    echo
+    echo "Please answer with y/n"
   esac
  done
 done < <(sort -k1,1n $guide)
@@ -103,7 +118,8 @@ done < <(sort -k1,1n $guide)
 #now finally for the means calculation
 
 #announce beggining of mean calculation
-echo -e "\nCalculating mean read counts for every gene among each of the sample types..."
+echo
+echo "Calculating mean read counts for every gene among each of the sample types..."
 
 #define the output file (there are a lot of genes, we don't want to just show everything on the screen
 final_output="Tbbgenes_means.tsv"
@@ -170,4 +186,5 @@ done < <(cut -f4 $genes)
 rm -f $samples_used
 
 #exit message
-echo -e "\nMean values for gene counts have been stored in $final_output"
+echo
+echo "Mean values for gene counts have been stored in $final_output"
