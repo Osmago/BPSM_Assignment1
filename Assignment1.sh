@@ -1,5 +1,4 @@
 #!bin/bash
-
 #this script will get data from RNA sequencing of two life stages of Tripanosoma bruscei bruscei,
 #with three samples each, and count the mean count of reads aligning with each reference gene
 
@@ -31,6 +30,7 @@ echo -e "Using $guide\tfile as guide for paired reads"
 echo -e "Using $zip_genome\tfile as genome"
 echo -e "Using $genes\tfile as reference for gene locations"
 echo
+
 #create bowtie2 database for our genome as it will be used for every read
 #omitted bowtie2 output because it's too big and the user should know the quality of the genome
 #using 2 threads to make it a little bit faster
@@ -41,6 +41,16 @@ bowtie2-build $genome $genome_prefix --threads 2 > /dev/null
 echo
 echo "Genome database creation done"
 
+#fastqc analysis
+#using a thread for each file analysed
+fqpaths=$(awk '{a="/localdisk/data/BPSM/Assignment1/fastq/"; b=a$3" "a$4; print b}' $guide | paste -d ' ' -s)
+echo
+echo "Assessing sequencing quality of sample $smpl_nmbr..."
+echo
+fastqc --extract -o fastqc_outputs/ $fqpaths --threads 12
+echo "Sequence quality assessment done"
+echo
+
 #this loop will separate the analysis of each sequencing pair, sample by sample
 #this includes steps of the fastqc report and coosing wether to use the samples or not,
 #then analysing the pair's data with bowtie2, samtools and bedtools
@@ -49,13 +59,6 @@ while read smpl_nmbr smpl_type pair1 pair2; do
  #saving pairs files names so i can use them later
  pair1_path="/localdisk/data/BPSM/Assignment1/fastq/$pair1"
  pair2_path="/localdisk/data/BPSM/Assignment1/fastq/$pair2"
-
- #fastqc analysis
- #using 2 threads to make it a little bit faster
- echo
- echo "Assessing sequencing quality of sample $smpl_nmbr..."
- echo
- fastqc --extract -o fastqc_outputs/ $pair1_path $pair2_path --threads 2
 
  #fastqc results presented for user
  echo
@@ -83,10 +86,10 @@ while read smpl_nmbr smpl_type pair1 pair2; do
     echo -e "$smpl_nmbr\t$smpl_type" >> $samples_used
 
     #use bowtie2 pair-based sequencing options to align
-    #using 4 threads to make it a little bit faster
+    #using a thread for each read pair
     echo "Pairing sample $smpl_nmbr reads to genome..."
     echo
-    bowtie2 -x $genome_prefix -1 $pair1_path -2 $pair2_path -S $smpl_nmbr.sam --threads 4
+    bowtie2 -x $genome_prefix -1 $pair1_path -2 $pair2_path -S $smpl_nmbr.sam --threads 6
     
     #use samtools to convert the output to BAM format ('view' gets SAM input and -b scpecifies outputs to BAM)
     echo
