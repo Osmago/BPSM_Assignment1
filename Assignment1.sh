@@ -33,24 +33,24 @@ echo
 
 #create bowtie2 database for our genome as it will be used for every read
 #omitted bowtie2 output because it's too big and the user should know the quality of the genome
-#using 2 threads to make it a little bit faster
+#using 10 threads to make it a little bit faster
 genome_prefix=$(echo "$genome" | cut -f1 -d '.')
 echo "Creating $genome_prefix bowtie2 database..."
 echo
 checkpoint=$SECONDS
-bowtie2-build $genome $genome_prefix --threads 2 > /dev/null
+bowtie2-build $genome $genome_prefix --threads 10 > /dev/null
 echo
 echo "Genome database creation done"
 echo "$((($SECONDS-$checkpoint) / 60)) minutes and $((($SECONDS-$checkpoint) % 60)) seconds elapsed."
 
 #fastqc analysis
-#using a thread for each file analysed
+#using 10 threads to make it a little bit faster
 fqpaths=$(awk '{a="/localdisk/data/BPSM/Assignment1/fastq/"; b=a$3" "a$4; print b}' $guide | paste -d ' ' -s)
 echo
 echo "Assessing sequencing quality of samples..."
 echo
 checkpoint=$SECONDS
-fastqc --extract -o fastqc_outputs/ $fqpaths --threads 12
+fastqc --extract -o fastqc_outputs/ $fqpaths --threads 10
 echo "Sequence quality assessment done"
 echo "$((($SECONDS-$checkpoint) / 60)) minutes and $((($SECONDS-$checkpoint) % 60)) seconds elapsed."
 echo
@@ -90,18 +90,19 @@ while read smpl_nmbr smpl_type pair1 pair2; do
     echo -e "$smpl_nmbr\t$smpl_type" >> $samples_used
 
     #use bowtie2 pair-based sequencing options to align
-    #using a thread for each read pair
+    #using 6 threads to make it a little bit faster
     echo "Pairing sample $smpl_nmbr reads to genome..."
     echo
     checkpoint=$SECONDS
-    bowtie2 -x $genome_prefix -1 $pair1_path -2 $pair2_path -S $smpl_nmbr.sam --threads 6
+    bowtie2 -x $genome_prefix -1 $pair1_path -2 $pair2_path -S $smpl_nmbr.sam --threads 10
     echo "$((($SECONDS-$checkpoint) / 60)) minutes and $((($SECONDS-$checkpoint) % 60)) seconds elapsed."
     
     #use samtools to convert the output to BAM format ('view' gets SAM input and -b scpecifies outputs to BAM)
+    #using 10 threads to make it a little bit faster
     echo
     echo "Preparing data for gene counts..."
     checkpoint=$SECONDS
-    samtools view -b $smpl_nmbr.sam > $smpl_nmbr.bam
+    samtools view -@ 10 -b $smpl_nmbr.sam > $smpl_nmbr.bam
 
     #use bedtools to get gene count for this read pair
     #pairtobed gets the hits for this read pair in this bed file
@@ -202,3 +203,4 @@ rm -f $samples_used
 echo
 echo "Mean values for gene counts have been stored in $final_output"
 echo "$((($SECONDS-$checkpoint) / 60)) minutes and $((($SECONDS-$checkpoint) % 60)) seconds elapsed."
+echo "Total time elapsed: $(($SECONDS / 60)) minutes and $(($SECONDS % 60)) seconds"
