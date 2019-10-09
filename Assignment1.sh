@@ -26,9 +26,9 @@ samples_used="samples_used"
 
 #declare what are the files being used
 echo
-echo -e "Using $guide\tfile as guide for paired reads"
-echo -e "Using $zip_genome\tfile as genome"
-echo -e "Using $genes\tfile as reference for gene locations"
+echo -e "Paired reads guide file used:\t$guide"
+echo -e "Genome file used:\t$zip_genome"
+echo -e "Reference for genome location used:\t$genes"
 echo
 
 #create bowtie2 database for our genome as it will be used for every read
@@ -135,7 +135,7 @@ final_output="Tbbgenes_means.tsv"
 rm -f $final_output
 
 #do a header for the output
-echo -e "gene_name\tSld_mean\tStp_mean" >> $final_output
+echo -e "gene_name\tSlender_mean\tStumpy_mean" >> $final_output
 
 #this loop will go through each gene in our genes file and check in the .counts files created before if there were counts for it
 #if so, it will add each of the counts occurances and calculate a mean of all counts for each sample type in the end, appending this to the output file
