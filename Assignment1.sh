@@ -37,12 +37,9 @@ echo
 genome_prefix=$(echo "$genome" | cut -f1 -d '.')
 echo "Creating $genome_prefix bowtie2 database..."
 echo
-#checkpoint variable checks program run time before and after long processes, so that i can echo the processe's run time
-checkpoint=$SECONDS
 bowtie2-build $genome $genome_prefix --threads 10 > /dev/null
 echo
 echo "Genome database creation done"
-echo "$((($SECONDS-$checkpoint) / 60)) minutes and $((($SECONDS-$checkpoint) % 60)) seconds elapsed."
 
 #fastqc analysis
 #using 10 threads to make it a little bit faster
@@ -51,10 +48,8 @@ fqpaths=$(awk '{a="/localdisk/data/BPSM/Assignment1/fastq/"; b=a$3" "a$4; print 
 echo
 echo "Assessing sequencing quality of samples..."
 echo
-checkpoint=$SECONDS
 fastqc --extract -o fastqc_outputs/ $fqpaths --threads 10
 echo "Sequence quality assessment done"
-echo "$((($SECONDS-$checkpoint) / 60)) minutes and $((($SECONDS-$checkpoint) % 60)) seconds elapsed."
 echo
 
 #this loop will separate the analysis of each sequencing pair, sample by sample
@@ -96,15 +91,12 @@ while read smpl_nmbr smpl_type pair1 pair2; do
     #using 10 threads to make it faster
     echo "Pairing sample $smpl_nmbr reads to genome..."
     echo
-    checkpoint=$SECONDS
     bowtie2 -x $genome_prefix -1 $pair1_path -2 $pair2_path -S $smpl_nmbr.sam --threads 10
-    echo "$((($SECONDS-$checkpoint) / 60)) minutes and $((($SECONDS-$checkpoint) % 60)) seconds elapsed."
     
     #use samtools to convert the output to BAM format ('view' gets SAM input and -b scpecifies outputs to BAM)
     #using 10 threads to make it a little bit faster
     echo
     echo "Preparing data for gene counts..."
-    checkpoint=$SECONDS
     samtools view -@ 10 -b $smpl_nmbr.sam > $smpl_nmbr.bam
 
     #use bedtools to get gene count for this read pair
@@ -115,7 +107,6 @@ while read smpl_nmbr smpl_type pair1 pair2; do
     bedtools pairtobed -abam $smpl_nmbr.bam -b $genes -bedpe | cut -f14 | sort | uniq -c > $smpl_nmbr.counts
     echo
     echo "Finished counting sample $smpl_nmbr read alignments with genes"
-    echo "$((($SECONDS-$checkpoint) / 60)) minutes and $((($SECONDS-$checkpoint) % 60)) seconds elapsed."
    ;;
    #if user chose no, go to next pair 
    [Nn])
@@ -136,7 +127,6 @@ done < <(sort -k1,1n $guide)
 #announce beggining of mean calculation
 echo
 echo "Calculating mean read counts for every gene among each of the sample types..."
-checkpoint=$SECONDS
 
 #define the output file (there are a lot of genes, we don't want to just show everything on the screen
 final_output="Tbbgenes_means.tsv"
@@ -205,5 +195,3 @@ rm -f $samples_used
 #exit message
 echo
 echo "Mean values for gene counts have been stored in $final_output"
-echo "$((($SECONDS-$checkpoint) / 60)) minutes and $((($SECONDS-$checkpoint) % 60)) seconds elapsed."
-echo "Total time elapsed: $(($SECONDS / 60)) minutes and $(($SECONDS % 60)) seconds"
