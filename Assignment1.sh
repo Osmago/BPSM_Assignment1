@@ -37,6 +37,7 @@ echo
 genome_prefix=$(echo "$genome" | cut -f1 -d '.')
 echo "Creating $genome_prefix bowtie2 database..."
 echo
+#checkpoint variable checks program run time before and after long processes, so that i can echo the processe's run time
 checkpoint=$SECONDS
 bowtie2-build $genome $genome_prefix --threads 10 > /dev/null
 echo
@@ -45,6 +46,7 @@ echo "$((($SECONDS-$checkpoint) / 60)) minutes and $((($SECONDS-$checkpoint) % 6
 
 #fastqc analysis
 #using 10 threads to make it a little bit faster
+#get a space-delimited list of the paths to the data of each 
 fqpaths=$(awk '{a="/localdisk/data/BPSM/Assignment1/fastq/"; b=a$3" "a$4; print b}' $guide | paste -d ' ' -s)
 echo
 echo "Assessing sequencing quality of samples..."
@@ -56,7 +58,7 @@ echo "$((($SECONDS-$checkpoint) / 60)) minutes and $((($SECONDS-$checkpoint) % 6
 echo
 
 #this loop will separate the analysis of each sequencing pair, sample by sample
-#this includes steps of the fastqc report and coosing wether to use the samples or not,
+#this includes coosing wether to use the samples or not, based on the fastqc report summary
 #then analysing the pair's data with bowtie2, samtools and bedtools
 while read smpl_nmbr smpl_type pair1 pair2; do
 
@@ -80,6 +82,7 @@ while read smpl_nmbr smpl_type pair1 pair2; do
  while test $chose -eq 0; do
 #  read -p "Do you want to use this sequencing data? [y/n]" -n 1 yn </dev/tty
   echo
+  #auto-selecting yes to quicken testing process
   yn="y"
   case $yn in
    #if user chose yes, continue processing
@@ -90,7 +93,7 @@ while read smpl_nmbr smpl_type pair1 pair2; do
     echo -e "$smpl_nmbr\t$smpl_type" >> $samples_used
 
     #use bowtie2 pair-based sequencing options to align
-    #using 6 threads to make it a little bit faster
+    #using 10 threads to make it faster
     echo "Pairing sample $smpl_nmbr reads to genome..."
     echo
     checkpoint=$SECONDS
@@ -106,7 +109,7 @@ while read smpl_nmbr smpl_type pair1 pair2; do
 
     #use bedtools to get gene count for this read pair
     #pairtobed gets the hits for this read pair in this bed file
-    #using -abam to specify BAM input and -bedpe to specify BED formatted output, where the gene name is in column 14. We will sort and count each gene hit
+    #using -abam to specify BAM input and -bedpe to specify BED formatted output, where the gene name is in column 14. We will sort and count each gene hit with sort and uniq
     echo
     echo "Counting read alignments per gene for sample $smpl_nmbr..."
     bedtools pairtobed -abam $smpl_nmbr.bam -b $genes -bedpe | cut -f14 | sort | uniq -c > $smpl_nmbr.counts
